@@ -36,10 +36,18 @@ export function checkPlanAllowsNewPage(
 ): string | null {
   const plan = getPlanConfig(client.plan);
 
-  if (client.plan === 'trial' && client.plan_expires_at) {
+  // Applies to every plan, not just trial. Billing is manual right now
+  // (client pays via BaridiMob, admin confirms and sets an expiry) — if
+  // expiry only gated trial, a basic/pro client would stay on that plan
+  // forever even after their paid period lapsed, with no actual
+  // enforcement mechanism short of the admin remembering to check dates
+  // and downgrade people by hand.
+  if (client.plan_expires_at) {
     const expired = new Date(client.plan_expires_at).getTime() < Date.now();
     if (expired) {
-      return 'انتهت فترتك التجريبية. يرجى ترقية خطتك للمتابعة في إنشاء صفحات جديدة.';
+      return client.plan === 'trial'
+        ? 'انتهت فترتك التجريبية. يرجى ترقية خطتك للمتابعة في إنشاء صفحات جديدة.'
+        : `انتهت صلاحية خطة "${plan.label}". يرجى تجديد اشتراكك للمتابعة في إنشاء صفحات جديدة.`;
     }
   }
 

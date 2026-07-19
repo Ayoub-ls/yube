@@ -4,6 +4,7 @@ import { createClient } from '../../lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { checkIsAdmin } from '../../lib/data';
 import { revalidatePath } from 'next/cache';
+import { PLANS } from '../../lib/plans';
 
 /**
  * Every action in this file re-checks is_admin() itself, server-side,
@@ -76,6 +77,10 @@ export async function updateClientPlan(prevState: any, formData: FormData) {
 
   if (!clientId || !plan) {
     return { error: 'بيانات غير صحيحة' };
+  }
+
+  if (!PLANS[plan] || !PLANS[plan].available) {
+    return { error: 'خطة غير صالحة' };
   }
 
   const update: Record<string, any> = { plan };
