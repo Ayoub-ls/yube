@@ -1,12 +1,16 @@
 'use client';
 
 import { useState } from 'react';
-import { X, Plus } from 'lucide-react';
+import { X, Plus, Sparkles, Loader2, RotateCcw } from 'lucide-react';
 import { SIZE_SUGGESTIONS } from '../types';
+import { generateHeroCopyAction } from '../../../app/dashboard/pages/new/ai-actions';
 import type { WizardData } from '../types';
 
 export function CustomHeroStep({ data, update }: { data: WizardData; update: (patch: Partial<WizardData>) => void }) {
   const [newSize, setNewSize] = useState('');
+  const [generating, setGenerating] = useState(false);
+  const [genError, setGenError] = useState<string | undefined>();
+  const hasGenerated = !!(data.headline || data.subheadline);
   const suggestions = (SIZE_SUGGESTIONS[data.templateId] || []).filter((s) => !data.sizes.includes(s));
 
   const addSize = () => {
@@ -25,6 +29,24 @@ export function CustomHeroStep({ data, update }: { data: WizardData; update: (pa
     update({ sizes: data.sizes.filter((s) => s !== size) });
   };
 
+  const handleGenerate = async () => {
+    setGenerating(true);
+    setGenError(undefined);
+    try {
+      const result = await generateHeroCopyAction(data.niche, data.productName, data.description);
+      if (result.error) {
+        setGenError(result.error);
+      } else {
+        update({ headline: result.headline || '', subheadline: result.subheadline || '' });
+      }
+    } catch (err) {
+      console.error(err);
+      setGenError('حدث خطأ غير متوقع، حاول مرة أخرى');
+    } finally {
+      setGenerating(false);
+    }
+  };
+
   return (
     <div className="space-y-6 py-2">
       <div>
@@ -34,29 +56,73 @@ export function CustomHeroStep({ data, update }: { data: WizardData; update: (pa
         </p>
       </div>
 
-      <div className="space-y-1.5">
-        <label className="text-xs font-bold text-slate-700">العنوان الرئيسي (اختياري)</label>
-        <input
-          value={data.headline}
-          onChange={(e) => update({ headline: e.target.value.slice(0, 80) })}
-          maxLength={80}
-          placeholder={`مثال: أناقة تبدأ من متجرك`}
-          className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-emerald-400"
-        />
-        <p className="text-[10px] text-slate-400">إذا تُرك فارغاً، سيُستخدم اسم المتجر تلقائياً</p>
-      </div>
+      <div className="space-y-3">
+        {!hasGenerated ? (
+          <button
+            type="button"
+            onClick={handleGenerate}
+            disabled={generating}
+            className="w-full flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-800 disabled:opacity-60 text-white text-sm font-bold py-3.5 rounded-2xl transition"
+          >
+            {generating ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>جاري توليد النص...</span>
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-4 h-4" />
+                <span>توليد العنوان بالذكاء الاصطناعي</span>
+              </>
+            )}
+          </button>
+        ) : (
+          <>
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-700">العنوان الرئيسي</label>
+              <input
+                value={data.headline}
+                onChange={(e) => update({ headline: e.target.value.slice(0, 80) })}
+                maxLength={80}
+                className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-emerald-400"
+              />
+            </div>
 
-      <div className="space-y-1.5">
-        <label className="text-xs font-bold text-slate-700">العنوان الفرعي (اختياري)</label>
-        <textarea
-          value={data.subheadline}
-          onChange={(e) => update({ subheadline: e.target.value.slice(0, 160) })}
-          maxLength={160}
-          rows={2}
-          placeholder="جملة قصيرة تشرح ما يميز منتجك"
-          className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-emerald-400 resize-none"
-        />
-        <p className="text-[10px] text-slate-400">إذا تُرك فارغاً، سيُستخدم وصف المنتج من الخطوة السابقة</p>
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-700">العنوان الفرعي</label>
+              <textarea
+                value={data.subheadline}
+                onChange={(e) => update({ subheadline: e.target.value.slice(0, 160) })}
+                maxLength={160}
+                rows={2}
+                className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-emerald-400 resize-none"
+              />
+            </div>
+
+            <button
+              type="button"
+              onClick={handleGenerate}
+              disabled={generating}
+              className="flex items-center justify-center gap-1.5 w-full text-xs font-bold text-slate-500 hover:text-slate-800 bg-slate-50 hover:bg-slate-100 disabled:opacity-60 py-2.5 rounded-xl transition"
+            >
+              {generating ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <RotateCcw className="w-3.5 h-3.5" />
+              )}
+              <span>{generating ? 'جاري إعادة التوليد...' : 'إعادة التوليد بالذكاء الاصطناعي'}</span>
+            </button>
+            <p className="text-[10px] text-slate-400 text-center">
+              يمكنك تعديل النص أعلاه يدوياً كما تريد
+            </p>
+          </>
+        )}
+
+        {genError && (
+          <p className="text-[11px] text-amber-600 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2 text-center">
+            ⚠️ {genError}
+          </p>
+        )}
       </div>
 
       <div className="space-y-2">

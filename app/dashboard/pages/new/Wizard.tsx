@@ -6,6 +6,7 @@ import { createLandingPage } from '../../actions';
 import { trackEvent } from '../../../../lib/analytics';
 import { ProgressBar } from '../../../../components/builder/ProgressBar';
 import { StepWrapper } from '../../../../components/builder/StepWrapper';
+import { NicheStep } from '../../../../components/builder/steps/NicheStep';
 import { TemplateStep } from '../../../../components/builder/steps/TemplateStep';
 import { ProductNameStep } from '../../../../components/builder/steps/ProductNameStep';
 import { PriceStep } from '../../../../components/builder/steps/PriceStep';
@@ -31,7 +32,7 @@ const THEMES_WITH_CUSTOM_HERO = ['premium', 'chelqa', 'pairdz', 'rita', 'gadget'
 const THEMES_WITH_COLOR_VARIANTS = ['premium', 'rita', 'gadget'];
 
 type StepId =
-  | 'template' | 'productName' | 'price' | 'description' | 'photos'
+  | 'niche' | 'template' | 'productName' | 'price' | 'description' | 'photos'
   | 'colorTheme' | 'customHero' | 'socialProof' | 'reviews' | 'whatsapp' | 'preview';
 
 interface StepDef {
@@ -45,6 +46,7 @@ interface StepDef {
 // custom-hero step, without any stale-index bugs.
 function getStepList(templateId: string): StepDef[] {
   const steps: StepDef[] = [
+    { id: 'niche', name: 'المجال' },
     { id: 'template', name: 'القالب' },
     { id: 'productName', name: 'اسم المنتج' },
     { id: 'price', name: 'السعر' },
@@ -80,8 +82,10 @@ export function NewLandingPageWizard({ clientId }: { clientId?: string }) {
   const currentStepId = stepList[currentStepIndex].id;
 
   useEffect(() => {
-    trackEvent('builder_started', { template_id: initialWizardData.templateId });
-    // Fire once, on mount, regardless of later template changes.
+    trackEvent('builder_started', {});
+    // Fire once, on mount. templateId isn't known yet at this point —
+    // niche and template are now chosen in the first two steps rather
+    // than defaulted — so there's nothing meaningful to attach here.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -95,6 +99,7 @@ export function NewLandingPageWizard({ clientId }: { clientId?: string }) {
 
   const canGoNext = (): boolean => {
     switch (currentStepId) {
+      case 'niche': return !!data.niche;
       case 'template': return !!data.templateId;
       case 'productName': return data.productName.trim().length > 0;
       case 'price': return parseInt(data.price, 10) > 0;
@@ -167,6 +172,7 @@ export function NewLandingPageWizard({ clientId }: { clientId?: string }) {
       trackEvent('page_submitted', {
         template_id: data.templateId,
         product_name: data.productName,
+        niche: data.niche,
       });
 
       const result = await createLandingPage(null, formData);
@@ -180,6 +186,7 @@ export function NewLandingPageWizard({ clientId }: { clientId?: string }) {
 
   const renderStep = () => {
     switch (currentStepId) {
+      case 'niche': return <NicheStep data={data} update={update} />;
       case 'template': return <TemplateStep data={data} update={update} />;
       case 'productName': return <ProductNameStep data={data} update={update} />;
       case 'price': return <PriceStep data={data} update={update} />;

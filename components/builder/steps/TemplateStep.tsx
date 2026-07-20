@@ -1,27 +1,25 @@
 'use client';
 
-import { Layout, Award, Heart, Shirt, Gem, Headphones } from 'lucide-react';
+import { getTemplatesForNiche, NICHES } from '../templateCatalog';
 import type { WizardData } from '../types';
 
-const TEMPLATES = [
-  { id: 'simple', name: 'صفحة بسيطة', icon: Layout, image: '../../../simple_preview.png' },
-  { id: 'premium', name: 'صفحة متميزة', icon: Award, image: '../../../premium_preview.png' },
-  { id: 'chelqa', name: 'أزياء وموضة', icon: Heart, image: '../../../chelqa_preview.png' },
-  { id: 'pairdz', name: 'ملابس أطفال', icon: Shirt, image: '../../../pairdz_preview.png' },
-  { id: 'rita', name: 'فخامة وأناقة', icon: Gem, image: '../../../rita_preview.png' },
-  { id: 'gadget', name: 'أجهزة ذكية وسماعات', icon: Headphones, image: '../../../gadget_preview.png' },
-];
-
 export function TemplateStep({ data, update }: { data: WizardData; update: (patch: Partial<WizardData>) => void }) {
+  const templates = getTemplatesForNiche(data.niche);
+  const nicheLabel = NICHES.find((n) => n.id === data.niche)?.label;
+
   return (
     <div className="space-y-4 text-center">
       <div>
         <h2 className="text-lg font-black text-slate-900">اختر القالب الأنسب</h2>
-        <p className="text-xs text-slate-400 mt-1">اختر من بين قوالبنا المصممة لتناسب أنواع السلع المختلفة</p>
+        <p className="text-xs text-slate-400 mt-1">
+          {nicheLabel
+            ? `قوالب مناسبة لـ "${nicheLabel}"`
+            : 'اختر من بين قوالبنا المصممة لتناسب أنواع السلع المختلفة'}
+        </p>
       </div>
 
       <div className="grid grid-cols-3 gap-3">
-        {TEMPLATES.map((t) => {
+        {templates.map((t) => {
           const Icon = t.icon;
           const selected = data.templateId === t.id;
           return (
@@ -42,6 +40,10 @@ export function TemplateStep({ data, update }: { data: WizardData; update: (patc
           );
         })}
       </div>
+
+      {templates.length === 0 && (
+        <p className="text-xs text-slate-400 py-6">لا توجد قوالب لهذا المجال حالياً — يرجى الرجوع واختيار مجال آخر</p>
+      )}
     </div>
   );
 }

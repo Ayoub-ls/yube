@@ -29,6 +29,7 @@ export interface ReviewItem {
 }
 
 export interface WizardData {
+  niche: string;
   templateId: string;
   productName: string;
   price: string;
@@ -65,7 +66,8 @@ export const SIZE_SUGGESTIONS: Record<string, string[]> = {
 };
 
 export const initialWizardData: WizardData = {
-  templateId: 'simple',
+  niche: '',
+  templateId: '',
   productName: '',
   price: '',
   originalPrice: '',
